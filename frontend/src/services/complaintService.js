@@ -144,82 +144,102 @@ export const analyzeComplaintText = (title = '', description = '') => {
   };
 };
 
+// Format backend flat document to frontend nested structure
+const formatComplaint = (c) => {
+  if (!c) return c;
+  const complaint = { ...c };
+  if (!complaint.id && complaint._id) {
+    complaint.id = complaint._id;
+  }
+  if (!complaint.citizenName && complaint.name) {
+    complaint.citizenName = complaint.name;
+  }
+  if (!complaint.citizenPhone && complaint.phone) {
+    complaint.citizenPhone = complaint.phone;
+  }
+  if (!complaint.submittedAt && complaint.createdAt) {
+    complaint.submittedAt = complaint.createdAt;
+  }
+  if (!complaint.aiAnalysis) {
+    complaint.aiAnalysis = {
+      category: complaint.category,
+      department: complaint.department,
+      urgency: complaint.urgency,
+      urgency_reason: complaint.urgency_reason,
+      sentiment: complaint.sentiment,
+      summary_en: complaint.summary_en,
+      summary_hi: complaint.summary_hi,
+      citizen_update_en: complaint.citizen_update_en,
+      citizen_update_hi: complaint.citizen_update_hi,
+      sms_hi: complaint.sms_hi,
+      ticket_sla_days: complaint.ticket_sla_days,
+      ai_confidence_score: complaint.ai_confidence_score,
+      priority_score: complaint.priority_score,
+      estimated_resolution: complaint.estimated_resolution,
+      requires_escalation: complaint.requires_escalation,
+      department_note: complaint.department_note || '',
+      tags: complaint.tags || []
+    };
+  }
+  return complaint;
+};
+
 export const complaintService = {
   // Get complaint by ID
   getById: async (id) => {
-    // Axios request simulation triggers interceptor and delay
-    await axiosClient.get(`/complaints/${id}`);
-    const complaints = getStoredComplaints();
-    const complaint = complaints.find(c => c.id.toUpperCase() === id.toUpperCase());
-    
-    const mockResponse = complaint ? { data: complaint } : { status: 404, message: 'Ticket not found.' };
-    notifyRequestListeners('GET', `/complaints/${id}`, null, mockResponse);
-    
-    if (!complaint) {
-      throw new Error('Ticket not found.');
+    try {
+      const res = await axiosClient.get(`/complaints/${id}`);
+      notifyRequestListeners('GET', `/complaints/${id}`, null, { data: res.data });
+      return formatComplaint(res.data);
+    } catch (err) {
+      notifyRequestListeners('GET', `/complaints/${id}`, null, { status: err.response?.status || 500, message: err.message });
+      throw err;
     }
-    return complaint;
   },
 
   // Submit new complaint
   submit: async (complaintData) => {
-    await axiosClient.post('/complaints', complaintData);
-    const complaints = getStoredComplaints();
-    
-    const aiAnalysis = analyzeComplaintText(complaintData.title, complaintData.description);
-    const newId = `JM-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-    
-    const newComplaint = {
-      id: newId,
-      citizenName: complaintData.name,
-      citizenPhone: complaintData.phone,
-      area: complaintData.area,
-      title: complaintData.title,
-      description: complaintData.description,
-      imageUrl: complaintData.imageUrl || '',
-      status: 'Submitted',
-      submittedAt: new Date().toISOString(),
-      aiAnalysis,
-      timeline: [
-        { status: 'Submitted', timestamp: new Date().toISOString(), description: 'Complaint filed via Citizen Portal.' },
-        { status: 'AI Analyzed', timestamp: new Date().toISOString(), description: `AI Engine routed to ${aiAnalysis.department} with priority score ${aiAnalysis.priority_score}` }
-      ]
-    };
-    
-    complaints.unshift(newComplaint);
-    saveComplaints(complaints);
-    
-    notifyRequestListeners('POST', '/complaints', complaintData, { data: newComplaint });
-    return newComplaint;
+    try {
+      const res = await axiosClient.post('/complaints', {
+        name: complaintData.name,
+        phone: complaintData.phone,
+        area: complaintData.area,
+        title: complaintData.title,
+        description: complaintData.description,
+        image: complaintData.imageUrl || null
+      });
+      notifyRequestListeners('POST', '/complaints', complaintData, { data: res.data });
+      return formatComplaint(res.data);
+    } catch (err) {
+      notifyRequestListeners('POST', '/complaints', complaintData, { status: err.response?.status || 500, message: err.message });
+      throw err;
+    }
   },
 
   // List all complaints
   list: async () => {
-    await axiosClient.get('/complaints');
-    const listData = getStoredComplaints();
-    notifyRequestListeners('GET', '/complaints', null, { data: listData });
-    return listData;
+    try {
+      const res = await axiosClient.get('/complaints');
+      // Backend returns: { success: true, count: X, pagination: {...}, data: [...] }
+      const backendList = res.data.data || [];
+      const listData = backendList.map(formatComplaint);
+      notifyRequestListeners('GET', '/complaints', null, { data: listData });
+      return listData;
+    } catch (err) {
+      notifyRequestListeners('GET', '/complaints', null, { status: err.response?.status || 500, message: err.message });
+      throw err;
+    }
   },
 
   // Update status (for admin actions)
   updateStatus: async (id, status, note = '') => {
-    await axiosClient.patch(`/complaints/${id}`, { status, note });
-    const complaints = getStoredComplaints();
-    const index = complaints.findIndex(c => c.id === id);
-    if (index !== -1) {
-      complaints[index].status = status;
-      complaints[index].timeline.push({
-        status,
-        timestamp: new Date().toISOString(),
-        description: note || `Complaint status updated to ${status}.`
-      });
-      if (note) {
-        complaints[index].aiAnalysis.department_note = note;
-      }
-      saveComplaints(complaints);
-      notifyRequestListeners('PATCH', `/complaints/${id}`, { status, note }, { data: complaints[index] });
-      return complaints[index];
+    try {
+      const res = await axiosClient.patch(`/complaints/${id}`, { status, note });
+      notifyRequestListeners('PATCH', `/complaints/${id}`, { status, note }, { data: res.data });
+      return formatComplaint(res.data);
+    } catch (err) {
+      notifyRequestListeners('PATCH', `/complaints/${id}`, { status, note }, { status: err.response?.status || 500, message: err.message });
+      throw err;
     }
-    throw new Error('Complaint not found.');
   }
 };

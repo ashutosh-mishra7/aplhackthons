@@ -41,7 +41,11 @@ const createComplaint = async (req, res, next) => {
       image: image || null,
       status: 'Pending',
       is_ai_processed: !isFallback,
-      ...aiResult
+      ...aiResult,
+      timeline: [
+        { status: 'Submitted', timestamp: new Date(), description: 'Complaint filed via Citizen Portal.' },
+        { status: 'AI Analyzed', timestamp: new Date(), description: `AI Engine routed to ${aiResult.department} with priority score ${aiResult.priority_score}` }
+      ]
     };
 
     const newComplaint = new Complaint(complaintData);
@@ -108,12 +112,31 @@ const getComplaints = async (req, res, next) => {
 };
 
 /**
- * Retrieves a single complaint by its MongoDB ObjectId.
+ * Retrieves a single complaint by its MongoDB ObjectId or custom Seed ID.
  * GET /api/complaints/:id
  */
 const getComplaintById = async (req, res, next) => {
   try {
-    const complaint = await Complaint.findById(req.params.id);
+    const mongoose = require('mongoose');
+    let searchId = req.params.id;
+    const mappings = {
+      'JM-2026-9821': '664d4b1a4f1a4e1a4e1a9821',
+      'JM-2026-4439': '664d4b1a4f1a4e1a4e1a4439',
+      'JM-2026-7712': '664d4b1a4f1a4e1a4e1a7712',
+      'JM-2026-1188': '664d4b1a4f1a4e1a4e1a1188'
+    };
+    if (mappings[searchId]) {
+      searchId = mappings[searchId];
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(searchId)) {
+      return res.status(404).json({
+        success: false,
+        message: `Complaint not found with ID ${req.params.id}`
+      });
+    }
+
+    const complaint = await Complaint.findById(searchId);
 
     if (!complaint) {
       return res.status(404).json({
@@ -128,8 +151,69 @@ const getComplaintById = async (req, res, next) => {
   }
 };
 
+/**
+ * Updates a complaint's status and logs a timeline event. Supports custom Seed ID.
+ * PATCH /api/complaints/:id
+ */
+const updateComplaintStatus = async (req, res, next) => {
+  try {
+    const mongoose = require('mongoose');
+    const { status, note } = req.body;
+    
+    let searchId = req.params.id;
+    const mappings = {
+      'JM-2026-9821': '664d4b1a4f1a4e1a4e1a9821',
+      'JM-2026-4439': '664d4b1a4f1a4e1a4e1a4439',
+      'JM-2026-7712': '664d4b1a4f1a4e1a4e1a7712',
+      'JM-2026-1188': '664d4b1a4f1a4e1a4e1a1188'
+    };
+    if (mappings[searchId]) {
+      searchId = mappings[searchId];
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(searchId)) {
+      return res.status(404).json({
+        success: false,
+        message: `Complaint not found with ID ${req.params.id}`
+      });
+    }
+
+    // Find the complaint
+    const complaint = await Complaint.findById(searchId);
+    if (!complaint) {
+      return res.status(404).json({
+        success: false,
+        message: `Complaint not found with ID ${req.params.id}`
+      });
+    }
+
+    // Set fields
+    complaint.status = status;
+    if (note) {
+      complaint.department_note = note;
+    }
+    
+    // Add event to timeline
+    complaint.timeline.push({
+      status,
+      timestamp: new Date(),
+      description: note || `Complaint status updated to ${status}.`
+    });
+
+    if (status === 'Escalated') {
+      complaint.requires_escalation = true;
+    }
+
+    const updated = await complaint.save();
+    return res.status(200).json(updated);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createComplaint,
   getComplaints,
-  getComplaintById
+  getComplaintById,
+  updateComplaintStatus
 };

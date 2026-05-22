@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-// Creating an Axios client that intercepts calls to simulate actual API logic.
+// Creating an Axios client that points to our live backend API.
 const axiosClient = axios.create({
-  baseURL: '/api',
-  timeout: 5000,
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://apl-hackathon-backend.onrender.com/api',
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -30,15 +30,6 @@ const notifyRequestListeners = (type, url, payload, response) => {
   }));
 };
 
-// Request Interceptor: Emulates latency and resolves mock data
-axiosClient.interceptors.request.use(async (config) => {
-  // Simulate network latency (400ms - 900ms)
-  const delay = Math.floor(Math.random() * 500) + 400;
-  await new Promise(resolve => setTimeout(resolve, delay));
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
-
 export default axiosClient;
 export { notifyRequestListeners };
+

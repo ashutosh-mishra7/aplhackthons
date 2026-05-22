@@ -126,6 +126,11 @@ const ComplaintSchema = new mongoose.Schema({
   tags: [{ 
     type: String 
   }],
+  timeline: [{
+    status: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
+    description: { type: String, required: true }
+  }],
 
   // Auditing Metas
   is_ai_processed: { 

@@ -3,7 +3,8 @@ const router = express.Router();
 const { 
   createComplaint, 
   getComplaints, 
-  getComplaintById 
+  getComplaintById,
+  updateComplaintStatus
 } = require('../controllers/complaint.controller');
 const { validateComplaint } = require('../middleware/validate.middleware');
 
@@ -15,5 +16,8 @@ router.get('/', getComplaints);
 
 // GET /api/complaints/:id - Retrieve specific complaint details
 router.get('/:id', getComplaintById);
+
+// PATCH /api/complaints/:id - Update status (for admin actions)
+router.patch('/:id', updateComplaintStatus);
 
 module.exports = router;

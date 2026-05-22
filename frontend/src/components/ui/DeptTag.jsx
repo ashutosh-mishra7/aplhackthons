@@ -7,15 +7,15 @@ export const DeptTag = ({ department = '' }) => {
   let colorClass = 'bg-slate-800 text-slate-300 border-slate-700';
   let icon = <Settings className="w-3.5 h-3.5" />;
   
-  if (normDept.includes('electricity') || normDept.includes('lesa')) {
+  if (normDept.includes('electricity') || normDept.includes('lesa') || normDept.includes('vidyut') || normDept.includes('power')) {
     code = 'LESA-PWR';
     colorClass = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
     icon = <Bolt className="w-3.5 h-3.5" />;
-  } else if (normDept.includes('water') || normDept.includes('jal')) {
+  } else if (normDept.includes('water') || normDept.includes('jal') || normDept.includes('sewer') || normDept.includes('drainage')) {
     code = 'JAL-SAN';
     colorClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
     icon = <Droplet className="w-3.5 h-3.5" />;
-  } else if (normDept.includes('sanitation') || normDept.includes('nagar nigam')) {
+  } else if (normDept.includes('sanitation') || normDept.includes('nagar nigam') || normDept.includes('garbage')) {
     code = 'LNN-SAN';
     colorClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
     icon = <Trash2 className="w-3.5 h-3.5" />;
@@ -23,11 +23,11 @@ export const DeptTag = ({ department = '' }) => {
     code = 'LKO-TRF';
     colorClass = 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
     icon = <Navigation className="w-3.5 h-3.5" />;
-  } else if (normDept.includes('encroachment') || normDept.includes('town planning')) {
+  } else if (normDept.includes('encroachment') || normDept.includes('town planning') || normDept.includes('rajasva') || normDept.includes('land')) {
     code = 'LNN-ENC';
     colorClass = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
     icon = <ShieldAlert className="w-3.5 h-3.5" />;
-  } else if (normDept.includes('public works') || normDept.includes('pwd')) {
+  } else if (normDept.includes('public works') || normDept.includes('pwd') || normDept.includes('loknirman') || normDept.includes('road')) {
     code = 'PWD-INF';
     colorClass = 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
   }
