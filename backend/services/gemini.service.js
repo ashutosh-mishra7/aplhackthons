@@ -26,8 +26,8 @@ const analyzeGrievance = async (title, description) => {
 
   try {
     const genAI = getGeminiClient();
-    // Use gemini-1.5-flash as it is fast, free-tier eligible, and supports structured JSON outputs
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Use gemini-flash-latest as it is fast, free-tier eligible, and supports structured JSON outputs
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
     const systemPrompt = `
 You are the core AI Engine of "JanMitra AI", an enterprise-grade smart city grievance governance system in India.
